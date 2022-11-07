@@ -1,0 +1,46 @@
+---
+############################ PROD ########################
+- name: Install ApacheTomcat9
+  hosts: prod-web
+  become: yes
+
+  tasks:
+  - name: Install ApacheTomcat
+    apt: 
+      name: tomcat9
+      state: present
+
+  - name: Start service tomca9, if not started
+    service: 
+      name: tomcat9
+      state: started   
+########################### SBORKA ################################
+- name: Install Maven, clone java code from GitHub, package it and copy to prod ApacheTomcat
+  hosts: sborka
+  become: yes
+
+  tasks:
+  - name: Install Git
+    apt: 
+      name: git
+      state: present
+
+  - name: Install Maven
+    apt: 
+      name: maven
+      state: present
+
+  - name: get java code from GitHub from master branch
+    git: 
+      repo: https://github.com/boxfuse/boxfuse-sample-java-war-hello.git
+      dest: /tmp/maven 
+
+  - name: package java code by Maven
+    shell: "cd /tmp/maven && mvn package"
+
+  - name: pause for wait mvn package results
+    pause:
+      seconds: 30
+
+  - name: copying hello-1.0.war to ApacheTomcat9 Prod server
+    shell: "scp /tmp/maven/target/hello-1.0.war root@IP_Tomcat9:/var/lib/tomcat9/webapps/"
